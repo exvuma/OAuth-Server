@@ -10,8 +10,8 @@ module.exports = {
     filename: "bundle.js",
     path: path.join(__dirname, "dist")
   },
-
-  mode: process.env.NODE_ENV || "development",
+ mode:"production",
+  // mode: process.env.NODE_ENV || "development",
 
   watchOptions: {
     ignored: /node_modules|dist|\.js/g

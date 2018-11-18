@@ -17,7 +17,9 @@ const oauth2 = oauth2_lib.create(credentials);
 addEventListener("fetch", (event: FetchEvent) => {
     const url = new URL(event.request.url);
     // url.password()
-    console.log(url.pathname)
+  console.log(url.pathname)
+  let fakeResp =  Promise.resolve(new Response("asda"))
+  event.respondWith(fakeResp)
   if (url.pathname.endsWith("/token"))
     event.respondWith(getTokenHandler(event.request));
   if (url.pathname.endsWith("/verify"))
