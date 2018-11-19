@@ -8,7 +8,7 @@
     "build": "webpack",
     "build:watch": "webpack --watch",
     "preview": "workers-preview < dist/bundle.js",
-    "cf": "webpack && workers-preview --preview-url 'https://missv.info/token?un=1231&pwd=123&token=123' < dist/bundle.js"
+    "cf": "webpack && workers-preview --preview-url 'https://missv.info/callback?code=1231&pwd=123&token=123' < dist/bundle.js"
   },
   "author": "bernard.victoria22@gmail.com",
   "license": "ISC",
