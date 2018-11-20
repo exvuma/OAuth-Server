@@ -1,11 +1,50 @@
 
-export const oauth_route = "https://missv.info/oauth"
-export const app_route = "https://missv.info/oauth/app"
 export const clientSecret = "vicsecret";
+export const credentials = {
+  client: {
+    id: "victoriasclient",
+    secret: "victoriassecret"
+  },
+  auth: {
+      tokenHost: "https://error-backup.tk",
+    tokenPath: "/oauth/token",
+    authorizePath: "/oauth/authorize"
+  }
+};
+export const oauth_route = credentials.auth.tokenHost + "/oauth";
+export const app_route = credentials.auth.tokenHost + "/oauth/app";
+//protected user information
+export const userInfo = {
+  email: "someuser@ex.com",
+  id: 123,
+  install: {
+    options: {
+      color: "red"
+    }
+  }
+};
+export function giveOAuthAcceptPage(request: Request, code: String) {
+  let req_url = new URL(request.url);
+  let redirect_url = req_url.searchParams.get("redirect_uri");
+  return `<!DOCTYPE html>
+    <html>
+    <script>
+    function accept(){
 
-
-export function giveLoginPage(request: Request) {
-    return `<!DOCTYPE html>
+        console.log(" code in accpt", "${code}")
+        let loc = "${redirect_url}?code=${code}&email=${userInfo.email}&client_id=${credentials.client.id}"; 
+         window.location.href= loc
+    }
+    </script>
+    <body>
+        Here
+        <button onClick=accept()> Accept</button>
+    </body>
+    </html>
+    `;
+}
+export function giveLoginPage(request: Request, token: String) {
+  return `<!DOCTYPE html>
 <html>
 <script>
 function getCookie(cname) {
@@ -24,23 +63,37 @@ function getCookie(cname) {
 }
 function login(){
     console.log("senidng away")
-    let loc = "${oauth_route}/callback?code=1111&un=vicasda&email=asdasd&client_id=12312"; 
+    let loc = "${oauth_route}/callback?redirect_uri="+ window.location.href +"&email=${userInfo.email}&client_id=${credentials.client.id}"; 
     console.log(loc)
     window.location.href= loc
 }
 function getResults(){
     const token = getCookie("token")
     console.log(token)
-    const init = {
-     headers: {
-        "Authorization": token
-     }
-    };
+    let init = {}
+    if(token) {
+        init = {
+            headers: {
+                "Authorization": token
+            }
+        }
+    }else{
+        let mes = "no token"
+        var node = document.createElement("li");                 
+        var textnode = document.createTextNode(JSON.stringify(mes));         
+        node.appendChild(textnode);                             
+        document.getElementById("body_id").appendChild(node);
+        return
+    }
     fetch( "${oauth_route}/resource", init).then( res =>{
+        console.log(init)
         console.log(res)
+        if(res.ok)
         return res.json()
+        else throw(res.text())
     })
-   .then(body =>
+    .catch(err =>{ throw(err)})
+    .then(body =>
         {
             console.log(body)
             var node = document.createElement("LI");                 
@@ -48,48 +101,33 @@ function getResults(){
             node.appendChild(textnode);                             
             document.getElementById("body_id").appendChild(node);  
         })
-
+    .catch(er=>{
+            console.log(er)
+            var node = document.createElement("li");                 
+            var textnode = document.createTextNode(JSON.stringify(er));         
+            node.appendChild(textnode);                             
+            document.getElementById("body_id").appendChild(node);  
+    })
 }
     
-//  window.location.href="https://www.cloudflare.com/apps/oauth/?code=1111&username=vicasda&email=asdasd&client_id=12312"; 
 </script>
 <body id="body_id">
-
+    Here <br> 
 <button onClick=login()> Ask OAuth Server for Permission </button>
 <button onClick=getResults()> Results </button>
 
 </body>
 </html>
 
-
 `;
 }
-export function giveOAuthAcceptPage(request: Request) {
-    let req_url = new URL(request.url)
-    let redirect_url = req_url.searchParams.get("redirect_uri")
-    let OAuth_html = `<!DOCTYPE html>
-    <html>
-    <script>
-    function accept(){
-        console.log("senidng away")
-        let loc = "${redirect_url}?code=1111&un=vicasda&email=asdasd&client_id=12312"; 
-        console.log(loc)
-         window.location.href= loc
-    }
-    </script>
-    <body>
-        <button onClick=accept()> Accept</button>
-    </body>
-    </html>
-    `;
-    return OAuth_html
-}
+
 // export async function setJWTHeader(request: Request) {
 //     console.log('Got request', request)
 //     // const response = await fetch(request)
 //     //console.log('Got response', response)
 //     // const token = request.headers.get("Authorization")
-    
+
 //     let token = request.headers.get("Authorization").substring(7)// string out "bearer "
 //     const headers = {
 //         "content-type": "text/html"
