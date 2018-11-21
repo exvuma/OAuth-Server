@@ -1,4 +1,3 @@
-
 export const clientSecret = "vicsecret";
 export const credentials = {
   client: {
@@ -6,17 +5,20 @@ export const credentials = {
     secret: "victoriassecret"
   },
   auth: {
-      tokenHost: "https://error-backup.tk",
-    tokenPath: "/oauth/token",
+    tokenHost: "https://error-backup.tk",
+    tokenPath: "/token",
     authorizePath: "/oauth/authorize"
   }
 };
 export const oauth_route = credentials.auth.tokenHost + "/oauth";
+export const oauth_token_route =
+  credentials.auth.tokenHost + credentials.auth.tokenPath;
 export const app_route = credentials.auth.tokenHost + "/oauth/app";
 //protected user information
 export const userInfo = {
   email: "someuser@ex.com",
   id: 123,
+  pwd: "really-dumbed-down-pwd",
   install: {
     options: {
       color: "red"
@@ -32,7 +34,9 @@ export function giveOAuthAcceptPage(request: Request, code: String) {
     function accept(){
 
         console.log(" code in accpt", "${code}")
-        let loc = "${redirect_url}?code=${code}&email=${userInfo.email}&client_id=${credentials.client.id}"; 
+        let loc = "${redirect_url}?code=${code}&email=${
+    userInfo.email
+  }&client_id=${credentials.client.id}"; 
          window.location.href= loc
     }
     </script>
@@ -63,7 +67,9 @@ function getCookie(cname) {
 }
 function login(){
     console.log("senidng away")
-    let loc = "${oauth_route}/callback?redirect_uri="+ window.location.href +"&email=${userInfo.email}&client_id=${credentials.client.id}"; 
+    let loc = "${oauth_route}/callback?redirect_uri="+ window.location.href +"&email=${
+    userInfo.email
+  }&client_id=${credentials.client.id}"; 
     console.log(loc)
     window.location.href= loc
 }
@@ -85,7 +91,7 @@ function getResults(){
         document.getElementById("body_id").appendChild(node);
         return
     }
-    fetch( "${oauth_route}/resource", init).then( res =>{
+    fetch( "${oauth_token_route}/resource", init).then( res =>{
         console.log(init)
         console.log(res)
         if(res.ok)

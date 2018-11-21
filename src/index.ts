@@ -30,10 +30,6 @@ addEventListener("fetch", (event: FetchEvent) => {
     event.respondWith(giveLoginPageResponse(event.request));
   if (url.pathname.endsWith("/callback"))
     event.respondWith(sendtoAuthorize(event.request));
-  if (url.pathname.endsWith("/resource"))
-    event.respondWith(checkTokenGiveData(event.request));
-  if (url.pathname.endsWith(credentials.auth.tokenPath))
-    event.respondWith(checkCodeGiveToken(event.request));
   if (url.pathname.endsWith("/authorize"))
     event.respondWith(serveCallBack(event.request));
 });
@@ -45,7 +41,9 @@ function requestToken(code: String) {
   console.log(
     credentials.auth.tokenHost + credentials.auth.tokenPath + "?code=" + code
   );
-
+  // return new Promise((res, rej) => {
+  //   res(checkCodeGiveToken(code))
+  // })
   return fetch(
     credentials.auth.tokenHost + credentials.auth.tokenPath + "?code=" + code
   );
@@ -65,6 +63,8 @@ export async function giveLoginPageResponse(request: Request) {
   console.log(code);
 
   if (code) {
+    //  token = jwt.sign(code, credentials.client.secret);
+  // headers.append("set-cookie", "token=Bearer " + body.token);
     let pro = requestToken(code)
       .then(res => res.json())
       .catch(err => {
@@ -83,7 +83,7 @@ export async function giveLoginPageResponse(request: Request) {
         console.log("error in 2nd");
         return String(err);
       });
-    token = await pro//.then( e=>e )
+    // token = await pro//.then( e=>e )
   }
   console.log("headers", JSON.stringify(headers));
   console.log("set cookie header" , headers.get("set-cookie"));
@@ -159,54 +159,7 @@ async function serveCallBack(request: Request) {
     return new Response(error, { status: 500 });
   }
 }
-async function checkCodeGiveToken(request: Request) {
-  let req_url = new URL(request.url);
-  let token = "";
-  let respBody = {};
-  let headers = Object.assign(init.headers, {});
-  try {
-    let code = req_url.searchParams.get("code");
-    console.log(code);
 
-    const ver = jwt.verify(code, credentials.client.secret);
-    console.log(ver);
-
-    const info = jwt.decode(code);
-    console.log("info", info);
-    token = jwt.sign(code, credentials.client.secret);
-    respBody = { token };
-    headers = Object.assign(init.headers, {
-      "Set-Cookie": "token=Bearer " + token,
-      "content-type": "application/json"
-    });
-  } catch (error) {
-    console.log("error in checking code", error);
-    respBody = { token: error };
-  }
-
-  return new Response(JSON.stringify(respBody), { headers });
-}
-async function checkTokenGiveData(request: Request) {
-  const url = new URL(request.url);
-  let token = request.headers.get("Authorization").substring(7); // string out "bearer "
-  console.log("token", token);
-  let respBody = {};
-  try {
-    const ver = jwt.verify(token, credentials.client.secret);
-    console.log(ver);
-    // const info = jwt.decode(token);
-    // console.log("info", info);
-  } catch (e) {
-    console.log(e);
-    respBody = {
-      error: e
-    };
-    return new Response(JSON.stringify(respBody), { status: 500 });
-  }
-  respBody = { JWT: token, some_user_data: userInfo };
-  console.log(respBody);
-  return new Response(JSON.stringify(respBody), init);
-}
 
 // MyWebpage
 //   /login

@@ -2,12 +2,12 @@ const path = require("path");
 
 module.exports = {
   entry: {
-    bundle: path.join(__dirname, "./src/index.ts")
-    // bundle: path.join(__dirname, './src/index.js'),
+    worker1: path.join(__dirname, "./src/index.ts"),
+    worker2: path.join(__dirname, './src/token.ts'),
   },
 
   output: {
-    filename: "bundle.js",
+    filename: "[name].js",
     path: path.join(__dirname, "dist")
   },
  mode:"production",
