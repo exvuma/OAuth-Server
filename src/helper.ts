@@ -1,54 +1,36 @@
-export const clientSecret = "vicsecret";
-export const credentials = {
-  client: {
-    id: "victoriasclient",
-    secret: "victoriassecret"
-  },
-  auth: {
-    tokenHost: "https://error-backup.tk",
-    tokenPath: "/token",
-    authorizePath: "/oauth/authorize"
-  }
-};
-export const oauth_route = credentials.auth.tokenHost + "/oauth";
-export const oauth_token_route =
-  credentials.auth.tokenHost + credentials.auth.tokenPath;
-export const app_route = credentials.auth.tokenHost + "/oauth/app";
-//protected user information
-export const userInfo = {
-  email: "someuser@ex.com",
-  id: 123,
-  pwd: "really-dumbed-down-pwd",
-  install: {
-    options: {
-      color: "red"
-    }
-  }
-};
+import { userInfo, credentials, paths, init} from "./constants"
 export function giveOAuthAcceptPage(request: Request, code: String) {
-  let req_url = new URL(request.url);
-  let redirect_url = req_url.searchParams.get("redirect_uri");
-  return `<!DOCTYPE html>
+    let req_url = new URL(request.url);
+    let redirect_url = encodeURI(req_url.searchParams.get("redirect_uri"));
+    return `<!DOCTYPE html>
     <html>
     <script>
     function accept(){
 
         console.log(" code in accpt", "${code}")
-        let loc = "${redirect_url}?code=${code}&email=${
-    userInfo.email
-  }&client_id=${credentials.client.id}"; 
+        let loc = "${redirect_url}?code=${code}&email=${userInfo.email}&client_id=${credentials.client.id}"; 
          window.location.href= loc
     }
     </script>
     <body>
-        Here
+        from hlper
         <button onClick=accept()> Accept</button>
     </body>
     </html>
     `;
 }
+export async function errorRouteNotFoundResponse(request: Request) {
+    console.log("route not found");
+
+    let respBody = {
+        proceed: false,
+        errors: ["route not found on the token worker url: " + request.url],
+        install: {}
+    }
+    return new Response(JSON.stringify(respBody), init)
+}
 export function giveLoginPage(request: Request, token: String) {
-  return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <script>
 function getCookie(cname) {
@@ -67,9 +49,9 @@ function getCookie(cname) {
 }
 function login(){
     console.log("senidng away")
-    let loc = "${oauth_route}/callback?redirect_uri="+ window.location.href +"&email=${
-    userInfo.email
-  }&client_id=${credentials.client.id}"; 
+    let loc = "${paths.auth.callback}/?redirect_uri="+ window.location.href +"&email=${
+        userInfo.email
+        }&client_id=${credentials.client.id}"; 
     console.log(loc)
     window.location.href= loc
 }
@@ -91,7 +73,7 @@ function getResults(){
         document.getElementById("body_id").appendChild(node);
         return
     }
-    fetch( "${oauth_token_route}/resource", init).then( res =>{
+    fetch( "${ paths.token.resource}", init).then( res =>{
         console.log(init)
         console.log(res)
         if(res.ok)
@@ -118,8 +100,8 @@ function getResults(){
     
 </script>
 <body id="body_id">
-    Here <br> 
-<button onClick=login()> Ask OAuth Server for Permission </button>
+    from helper <br> 
+<button onClick=login()> First step of Oauth </button>
 <button onClick=getResults()> Results </button>
 
 </body>

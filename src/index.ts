@@ -3,35 +3,42 @@ import * as oauth2_lib from "simple-oauth2";
 import {
   giveLoginPage,
   giveOAuthAcceptPage,
-  oauth_route,
-  app_route,
-  clientSecret,
-  userInfo,
-  credentials
+  errorRouteNotFoundResponse
 } from "./helper";
+import {
+  paths,
+  userInfo,
+  init,
+
+  clientSecret,
+  credentials,
+} from "./constants"
+
 // import * from "./helper";
-// var jwt:any  = require("jsonwebtoken");
+// var jwt  = require("jsonwebtoken");
+// userInfo = {
+//   email: "v"
+// };
+// secret = "123"
+// const code = jwt.sign(userInfo.email, secret)
+// jwt.decode(code, secret)
+
 
 //https://www.npmjs.com/package/simple-oauth2
-const oauth2 = oauth2_lib.create(credentials);
-const init = {
-  headers: {
-    "content-type": "application/json"
-  }
-};
-
+// const oauth2 = oauth2_lib.create(credentials);
+/* for /oauth endpoints*/
 addEventListener("fetch", (event: FetchEvent) => {
   const url = new URL(event.request.url);
   // url.password()
   console.log(url.pathname);
-  // let fakeResp =  Promise.resolve(new Response("asda"))
-  // event.respondWith(fakeResp)
-  if (url.pathname.endsWith("/home"))
-    event.respondWith(giveLoginPageResponse(event.request));
-  if (url.pathname.endsWith("/callback"))
-    event.respondWith(sendtoAuthorize(event.request));
-  if (url.pathname.endsWith("/authorize"))
-    event.respondWith(serveCallBack(event.request));
+
+  if (url.pathname.includes("/home"))
+    return event.respondWith(giveLoginPageResponse(event.request));
+  if (url.pathname.includes("/callback"))
+    return event.respondWith(sendtoAuthorize(event.request));
+  if (url.pathname.includes("/authorize"))
+    return event.respondWith(serveCallBack(event.request));
+   return event.respondWith(errorRouteNotFoundResponse(event.request));
 });
 
 /* Client */
@@ -39,13 +46,13 @@ function requestToken(code: String) {
   console.log("request token url");
 
   console.log(
-    credentials.auth.tokenHost + credentials.auth.tokenPath + "?code=" + code
+    paths.token.token + "?code=" + code
   );
   // return new Promise((res, rej) => {
   //   res(checkCodeGiveToken(code))
   // })
   return fetch(
-    credentials.auth.tokenHost + credentials.auth.tokenPath + "?code=" + code
+    paths.token.token + "?code=" + code
   );
 }
 /* User Agent */
@@ -56,55 +63,73 @@ export async function giveLoginPageResponse(request: Request) {
   let req_url = new URL(request.url);
   let code = req_url.searchParams.get("code");
   let token = "";
-  let headers = new Headers({
-    "content-type": "text/html"
-  });
-  console.log("here");
-  console.log(code);
+  let headers = new Headers(Object.assign(init.headers, {
+    "content-type": "text/html",
+  }));
+  // console.log("headers after adding ",
+    // headers.forEach(head => console.log(head));
+  
+  let errors: string[] = []
 
   if (code) {
-    //  token = jwt.sign(code, credentials.client.secret);
-  // headers.append("set-cookie", "token=Bearer " + body.token);
-    let pro = requestToken(code)
-      .then(res => res.json())
-      .catch(err => {
-        console.log("error in then");
-         throw(String(err))
-      })
-      .then(body => {
-        console.log("body");
+    try {
+      let response = await requestToken(code)
+      // errors.push(response)
+      try {
+        let responseJSON = await response.json()
+        console.log("responseJSON",responseJSON);
+        
+        headers.append("set-cookie", "token=Bearer " + responseJSON.id_token);
 
-        console.log(body);
-        headers.append("set-cookie", "token=Bearer " + body.token);
+      }
+      catch (e) {
+        errors.push("error parsing the JSON")
+        errors.push(e)
+      }
 
-        return body.token;
-      })
-      .catch(err => {
-        console.log("error in 2nd");
-        return String(err);
-      });
+    }
+    catch (e) {
+      errors.push("error getting token")
+      errors.push(e)
+
+    }
+    // let tokenJson = await requestToken(code)
+    //   .then(res => res.json())
+    //   .catch(err => {
+    //     console.log("error in then");
+    //      throw(String(err))
+    //   })
+    //   .then(body => {
+    //     console.log("body");
+
+    //     console.log(body);
+    //     headers.append("set-cookie", "token=Bearer " + body.token);
+
+    //     return body.token;
+    //   })
+    //   .catch(err => {
+    //     console.log("error in 2nd");
+    //     return String(err);
+    //   });
     // token = await pro//.then( e=>e )
   }
   console.log("headers", JSON.stringify(headers));
-  console.log("set cookie header" , headers.get("set-cookie"));
-  
+  console.log("set cookie header", headers.get("set-cookie"));
+  console.log(errors);
+
+
 
   return new Response(giveLoginPage(request, token), { headers });
 }
 async function sendtoAuthorize(request: Request) {
-  // const authorizationUri = oauth2.authorizationCode.authorizeURL({
-  //   redirect_uri: app_route + "/home",
-  //   scope: "user.read", // also can be an array of multiple scopes, ex. ['<scope1>, '<scope2>', '...']
-  //   state: "someState"
-  // });
-  // app_route = "https://missv.info"
-  // oauth_route = "https://missv.info"
-  let authorizationUri = new URL(oauth_route + "/authorize");
+  let req_url = encodeURI(request.url)
+  let authorizationUri = new URL(paths.auth.authorize);
   authorizationUri.searchParams.set("scope", "user.read");
   authorizationUri.searchParams.set("state", "someState");
   authorizationUri.searchParams.set("response_type", "code");
   authorizationUri.searchParams.set("client_id", credentials.client.id);
-  authorizationUri.searchParams.set("redirect_uri", app_route + "/home");
+  // authorizationUri.searchParams.set("redirect_uri", req_url);
+  authorizationUri.searchParams.set("redirect_uri", paths.auth.home);
   // sign the client info
   // const token = jwt.sign({ user: userInfo }, clientSecret);
 
@@ -129,27 +154,17 @@ async function serveCallBack(request: Request) {
   let req_url = new URL(
     request.url //|| oauth_route + "/callback?un=1231&pwd=123&code=123"
   );
-  // const code = req_url.searchParams.get("code");
-  const client_id = req_url.searchParams.get("client_id");
-  // console.log("serveing code", code);
-  // const options = {
-  //   code,
-  //   redirect_uri: app_route + "/callback",
-  //   scope: "user.read"
-  // };
-  console.log("serveing callback");
+  // const client_id = req_url.searchParams.get("client_id");
+  // const redirect_uri = req_url.searchParams.get("redirect_uri");
 
   try {
-    // console.log("options", options);
-
-    // const token = oauth2.accessToken.create(code);
-    // const token = jwt.sign({ code: code, un: un }, clientSecret);
-
-    const code = jwt.sign(userInfo, credentials.client.secret)
+    const code = jwt.sign({ email: userInfo.email, client_id: credentials.client.id }, credentials.client.secret)
     console.log("The resulting token: ", code);
+    console.log("The resulting email: ", userInfo.email);
 
     let headers = Object.assign(init.headers, {
-      "content-type": "text/html"
+      "content-type": "text/html",
+      // "access-control-allow-origin":" no-cors"
     });
     return new Response(giveOAuthAcceptPage(request, code), {
       headers
