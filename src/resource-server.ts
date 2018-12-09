@@ -116,7 +116,8 @@ export async function giveToken(request: Request) {
       "access_token": accessToken,
       "token_type": "bearer",
       "expires_in": 2592000,
-      "id_token": token
+      "id_token": token,
+      "token": token
       // "scope": "read", "uid": 100101, "info": { "name": "Mark E. Mark", "email": "mark@thefunkybunch.com" }
     }
   } else {

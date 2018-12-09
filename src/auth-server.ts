@@ -158,10 +158,10 @@ async function serveCallBack(request: Request) {
   // const redirect_uri = req_url.searchParams.get("redirect_uri");
 
   try {
-    const code = jwt.sign({ email: userInfo.email, client_id: credentials.client.id }, credentials.client.secret)
+    let code = jwt.sign({ email: userInfo.email, client_id: credentials.client.id }, credentials.client.secret)
     console.log("The resulting token: ", code);
     console.log("The resulting email: ", userInfo.email);
-
+    code = Math.random().toString(36).substring(2, 12)
     let headers = Object.assign(init.headers, {
       "content-type": "text/html",
       // "access-control-allow-origin":" no-cors"

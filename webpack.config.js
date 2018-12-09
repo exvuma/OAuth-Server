@@ -2,8 +2,8 @@ const path = require("path");
 
 module.exports = {
   entry: {
-    worker1: path.join(__dirname, "./src/index.ts"),
-    worker2: path.join(__dirname, './src/token.ts'),
+    auth: path.join(__dirname, "./src/auth-server.ts"),
+    resource: path.join(__dirname, './src/resource-server.ts'),
   },
 
   output: {
