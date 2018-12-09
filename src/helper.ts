@@ -1,4 +1,5 @@
-import { userInfo, credentials, paths, init} from "./constants"
+import { userInfo, credentials, paths, init } from "./constants"
+
 export function giveOAuthAcceptPage(request: Request, code: String) {
     let req_url = new URL(request.url);
     let redirect_url = encodeURI(req_url.searchParams.get("redirect_uri"));

@@ -1,9 +1,12 @@
 import * as jwt from "jsonwebtoken";
 import * as oauth2_lib from "simple-oauth2";
 import { getCookie, } from "./shared";
-import { errorRouteNotFoundResponse} from "./helper"
-import {credentials, paths, init, accessToken} from "./constants"
+import { errorRouteNotFoundResponse } from "./helper"
+import { IError, HookResponse, factoryInstall, factoryHookResponse, factoryIError } from "./types"
+import { credentials, paths, init, accessToken } from "./constants"
 import { userInfo } from "os";
+import { fchmod } from "fs";
+import { format } from "url";
 // import * from "./helper";
 // var jwt:any  = require("jsonwebtoken");
 
@@ -29,67 +32,71 @@ addEventListener("fetch", (event: FetchEvent) => {
 /* use the bearer token to get the resource */
 export async function giveResource(request: Request) {
   let req_url = encodeURI(request.url)
-  let info = {}
+  var info: HookResponse = factoryHookResponse({})
   let token = ""
   try {
     token = getCookie(request.headers.get("cookie"), "token")
     if (!token) token = request.headers.get("Authorization").substring(7)
   }
   catch (e) {
-    info = {
-      errors: ["token not found ", e]
-    }
+    info.errors = [{
+      type: 'oauth',
+      message: e.message,
+      fields: [],
+    }]
+
     return new Response(JSON.stringify(info), init)
   }
-  try {
-    info = {
-      token: jwt.decode(token)
-    }
-    info = Object.assign(info, userInfo)
-    console.log("info" , info);
-    
-    
-  } catch (e) {
-    info = {
-      errors: ["error decoding  ", e]
-    }
-  }
+  // try {
+  //   info = {
+  //     token: jwt.decode(token)
+  //   }
+  //   info = Object.assign(info, userInfo)
+  //   console.log("info" , info);
+
+
+  // } catch (e) {
+  //   info = {
+  //     errors: ["error decoding  ", e]
+  //   }
+  // }
   return new Response(JSON.stringify(info), init)
 
 }
 /* use the bearer token to get the install */
 export async function giveInstall(request: Request) {
   console.log("giving reources");
-  
+
   let install = {}
   let token = ""
   // get Bearer token
-  let respBody = {
-    proceed: false,
-    errors: [""],
-    install: {}
-  }
+  let respBody: HookResponse = factoryHookResponse({})
   try {
     let reqJSON = await request.json()
-      respBody.proceed = true
-      let modInstall = reqJSON.install
-      modInstall.schema.properties.myTokenOption = {
-        type: 'string',
-        title: 'Token Option'
-      }
-      try {
-        token = reqJSON.install.authentications.account.token.token
-      } catch (e) {
-        token = "there was no token"
-      }
-      modInstall.options.myTokenOption = token
+    respBody.proceed = true
+    let modInstall = reqJSON.install
+    modInstall.schema.properties.myTokenOption = {
+      type: 'string',
+      title: 'Token Option'
+    }
+    try {
+      token = reqJSON.authentications.account.token.token
+    } catch (e) {
+      token = "there was no token"
+      token = reqJSON
+    }
+    modInstall.options.myTokenOption = token
 
-      respBody.install = modInstall
+    respBody.install = modInstall
     // })
   } catch (e) {
-    respBody.errors.push("Error getting the token from the request body")
+    respBody.errors.push(factoryIError({
+      type: "oauth",
+      message: "Error getting the token from the request body"
+    }
+    ));
     console.log(e);
-    
+
     // respBody.errors.push(e)
   }
   return new Response(JSON.stringify(respBody), init)
@@ -101,22 +108,41 @@ export async function giveToken(request: Request) {
 
   // const token = jwt.sign({ user: userInfo }, clientSecret);
   let req_url = new URL(request.url);
+  let respBody = {
+  }
   let code = req_url.searchParams.get("code");
+  console.log(code);
+
+  if (!code) {
+    try {
+      let reqBody = await request.text()
+      console.log("reqBody", reqBody);
+
+      let params = new URLSearchParams(reqBody)
+      code = params.get('code')
+      // code = reqBody.code || reqBody.metadata.code || reqBody.code[0] || reqBody.metadata.code[0]
+    }
+    catch (e) {
+      console.log("could not json");
+
+      respBody = factoryHookResponse({ errors: [factoryIError({ message: "request sent didn't from the body " })] })
+      return new Response(JSON.stringify(respBody), init);
+    }
+  }
 
   let token = "";
   let headers = new Headers(init.headers);
   console.log("here");
   console.log(code);
-  let respBody = {
-  }
+
   if (code) {
     token = jwt.sign(code, credentials.client.secret);
     headers.append("set-cookie", "token=Bearer " + token);
     respBody = {
-      "access_token": accessToken,
+      "access_token": token,
       "token_type": "bearer",
       "expires_in": 2592000,
-      "id_token": token,
+      "refresh_token": token,
       "token": token
       // "scope": "read", "uid": 100101, "info": { "name": "Mark E. Mark", "email": "mark@thefunkybunch.com" }
     }
