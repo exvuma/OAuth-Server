@@ -111,6 +111,7 @@ export async function giveToken(request: Request) {
   let respBody = {
   }
   let code = req_url.searchParams.get("code");
+  let email = req_url.searchParams.get("email");
   console.log(code);
 
   if (!code) {
@@ -120,11 +121,10 @@ export async function giveToken(request: Request) {
 
       let params = new URLSearchParams(reqBody)
       code = params.get('code')
+      email = params.get('email')
       // code = reqBody.code || reqBody.metadata.code || reqBody.code[0] || reqBody.metadata.code[0]
     }
     catch (e) {
-      console.log("could not json");
-
       respBody = factoryHookResponse({ errors: [factoryIError({ message: "request sent didn't from the body " })] })
       return new Response(JSON.stringify(respBody), init);
     }
@@ -138,6 +138,8 @@ export async function giveToken(request: Request) {
   if (code) {
     token = jwt.sign(code, credentials.client.secret);
     headers.append("set-cookie", "token=Bearer " + token);
+    // @ts-ignore
+    await TOKENS.put()
     respBody = {
       "access_token": token,
       "token_type": "bearer",

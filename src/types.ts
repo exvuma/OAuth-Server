@@ -1,3 +1,5 @@
+import {Cloudflare} from "./constants"
+import { resolve } from "url";
 export interface IError {
     type: string,
     message: string,
@@ -79,6 +81,62 @@ export interface HookResponse {
     message?: Message,
     install?: Install,
 }
+export interface CodeResponse {
+    un: string,
+    token?: string,
+    code?: string,
+    errors?: IError[],
+}
+// const Cloudflare = {
+//     api_key: "dd7d1a2414d7a7479bb88abefdec7287a8fdc",
+//     api_email: "victoria@cloudflare.com",
+//     id: "",
+//     tokens_id: "4ddfd2890aa04debba7b765d5dda4512",
+//     codes_id: "15be3acbc472419e86184df527d8c999",
+//     account_id: "323b0253f67c95c7bf534629f3d2fc04",
+//     url: "https://api.cloudflare.com/client/v4/accounts/"
+
+// }
+ export class Namespace {
+    id: string
+    url: string
+    headers: { [key: string]: string }
+    
+    constructor(id: string) {
+        this.id = id
+        this.url = Cloudflare.url + Cloudflare.account_id
+        this.headers = { "X-Auth-Email" : Cloudflare.api_email, 
+         "X-Auth-Key" : Cloudflare.api_key, 
+         "Content-Type" : "application/json", 
+        }
+    }
+    
+    put(key: string, val: string): Promise<Response> {
+        let init: RequestInit = {
+            method: "PUT",
+            body: JSON.stringify({
+                value: val
+            }),
+            headers: new Headers(this.headers)
+        }
+        console.log("herree");
+        
+        return fetch(this.url + "/storage/kv/namespaces/" + this.id + "/values/" + key, init )
+        // return new Promise((res, rej)=> resolve("da"))
+    }
+    get(key: string): Promise<Response> {
+        let init: RequestInit = {
+            method: "GET",
+            headers: new Headers(this.headers)
+        }
+        return fetch(this.url + "/storage/kv/namespaces/" + this.id + "/values/" + key , init)
+    }
+}
+
+// const codesKV = new Namespace(Cloudflare.codes_id)
+// codesKV.put("john", "somecode")
+
+
 export function factoryIError(attrs: Partial<IError> = {}): IError { 
     var error: IError = {
         type: '',
@@ -86,6 +144,13 @@ export function factoryIError(attrs: Partial<IError> = {}): IError {
         message: ''
     }
     return Object.assign(error, attrs)
+}
+export function factoryCodeResponse(attrs: Partial<CodeResponse> = {}): CodeResponse { 
+    var codeResp: CodeResponse = {
+        errors: [],
+        un:""
+    }
+    return Object.assign(codeResp, attrs)
 }
 export function factoryHookResponse(attrs: Partial<HookResponse> = {}): HookResponse { 
     var hookResp: HookResponse = {

@@ -4,13 +4,14 @@ module.exports = {
   entry: {
     auth: path.join(__dirname, "./src/auth-server.ts"),
     resource: path.join(__dirname, './src/resource-server.ts'),
+    local: path.join(__dirname, './src/helper.ts'),
   },
 
   output: {
     filename: "[name].js",
     path: path.join(__dirname, "dist")
   },
- mode:"production",
+ mode:"development",
   // mode: process.env.NODE_ENV || "development",
 
   watchOptions: {

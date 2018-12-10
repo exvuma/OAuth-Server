@@ -4,6 +4,9 @@ export const credentials = {
         id: "victoriasclient",
         secret: "victoriassecret"
     },
+    storage: {
+        secret: "somesecrettodecryptfromtheKV"
+    }
 
 };
 export const hosts = {
@@ -14,11 +17,13 @@ export const paths = {
     auth: {
         authorize: hosts.auth + "/authorize",
         callback: hosts.auth + "/callback",
-        home: hosts.auth + "/home"
+        home: hosts.auth + "/home",
+        login: hosts.auth + "/login",
+        storeCode: hosts.auth + "/code",
     },
     token: {
+        resource: hosts.token + "/resource",
         token: hosts.token + "/authorize",
-        resource: hosts.token + "/resource"
     }
 }
 // export const oauth_route = credentials.auth.authHost + "/oauth";
@@ -49,3 +54,14 @@ export const init = {
         "content-type": "application/json"
     }
 };
+export const Cloudflare = {
+    api_key: "<redacted>",
+    api_email: "victoria@cloudflare.com",
+    id: "",
+    tokens_id: "4ddfd2890aa04debba7b765d5dda4512",
+    codes_id: "15be3acbc472419e86184df527d8c999",
+    users_id: "4e8a01ed8eae4c3bb59b397d442889da",
+    account_id:"323b0253f67c95c7bf534629f3d2fc04",
+    url:"https://api.cloudflare.com/client/v4/accounts/"
+
+}

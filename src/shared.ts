@@ -51,3 +51,14 @@ export async function goingToOrigin(request: Request) {
   return new Response(giveOriginWarnPage(), { headers });
   
 }
+export function getTokenFromRequest(request: Request) {
+  let token = getCookie(request.headers.get("cookie"), "token")
+  if (!token) {
+    try {
+      token = request.headers.get("Authorization").substring(7)
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  return token
+}

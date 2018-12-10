@@ -218,25 +218,45 @@ export function giveOriginWarnPage() {
     </html>
     `;
 }
-export function loginModal() {
-    `
-    <script>
-// Get the modal
-var modal = document.getElementById('id01');
-
-// When the user clicks anywhere outside of the modal, close it
-window.onclick = function(event) {
-    if (event.target == modal) {
-        modal.style.display = "none";
-    }
-    var TestVar = form.inputbox.value;
-    console.log(TestVar)
+export function give403Page() {
+    return `<!DOCTYPE html>
+    <html>
+    <body>
+        403 returned
+    </body>
+    </html>
+    `;
 }
-</script>
-<button onclick="document.getElementById('id01').style.display='block'">Login</button>
+// export function loginModalScript() {
+// // Get the modal
+// var modal = document.getElementById('id01');
 
+// // When the user clicks anywhere outside of the modal, close it
+// window.onclick = function(event) {
+//     if (event.target == modal) {
+//         modal.style.display = "none";
+//     }
+//     var TestVar = form.inputbox.value;
+//     console.log(TestVar)
+
+// }
+
+export function loginHTML(): string {
+  return `  
+  <form class="" action="${paths.auth.storeCode}" id="form_id" method="post">
+    <div class="container">
+      <label for="un"><b>Username</b></label>
+      <input type="text" placeholder="Enter Username" name="un" required>
+
+      <label for="pwd"><b>Password</b></label>
+      <input type="password" placeholder="Enter Password" name="pwd" required>
+
+      <button type="submit">Login</button>
+    </div>
+  </form>` }
+export function modalHTML() : string { return  `
 <!-- The Modal -->
-<div id="id01" class="modal">
+<div class="modal" id="id01">
   <span onclick="document.getElementById('id01').style.display='none'" 
 class="close" title="Close Modal">&times;</span>
 
@@ -264,5 +284,5 @@ class="close" title="Close Modal">&times;</span>
       <span class="psw">Forgot <a href="#">password?</a></span>
     </div>
   </form>
-</div>`
+  </div>`
 }
