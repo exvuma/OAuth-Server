@@ -1,5 +1,4 @@
 import * as jwt from "jsonwebtoken";
-import * as oauth2_lib from "simple-oauth2";
 import {
   getCookie,
   getTokenFromRequest
@@ -8,19 +7,14 @@ import {
   giveLoginPage,
   giveOAuthAcceptPage,
   errorRouteNotFoundResponse
-} from "./helper";
+} from "./html_pages";
 import {
   paths,
-  userInfo,
   init,
-
-  clientSecret,
-  credentials,
-  Cloudflare,
+  credentials
 } from "./constants"
-import { factoryHookResponse, factoryIError, Namespace, factoryCodeResponse } from "./types";
-import { giveOriginWarnPage, give403Page } from "./generate_html";
-import { fchmod } from "fs";
+import { factoryHookResponse, factoryIError, factoryCodeResponse } from "./types";
+import {  give403Page } from "./html_pages";
 
 
 // var constants = require('./constants');
@@ -148,7 +142,6 @@ export async function verifyUser(request: Request): Promise<{email: string, pwd:
 // check for the token only and store the code that will be returned
 export async function accept(request: Request) {
   let {email, token, msg, pwd} = await verifyUser(request)
-  console.log("email", email);
   
   if (msg == "403") return new Response(give403Page(), { status: 403 })
   if (msg == "dne") return registerNewUser(email, pwd)
@@ -267,11 +260,7 @@ export async function giveLoginPageResponse(request: Request) {
     }
   } else {
     return new Response(giveLoginPage(request), { headers });
-    // return signIn(request)
   }
-  console.log("headers", JSON.stringify(headers));
-  console.log("set cookie header", headers.get("set-cookie"));
-  console.log(errors);
 
   return new Response(giveLoginPage(request), { headers });
 }

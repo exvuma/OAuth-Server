@@ -1,9 +1,11 @@
 import * as jwt from "jsonwebtoken";
 import * as oauth2_lib from "simple-oauth2";
 import { getCookie, } from "./shared";
-import { errorRouteNotFoundResponse } from "./helper"
-import { IError, HookResponse, factoryInstall, factoryHookResponse, factoryIError } from "./types"
-import { credentials, paths, init, accessToken } from "./constants"
+import { factoryTokenResponse } from "./types"
+import { errorRouteNotFoundResponse, give403Page } from "./html_pages"
+import { IError, HookResponse, factoryInstall, factoryHookResponse, factoryIError, factoryCodeResponse } from "./types"
+import { credentials } from "./constants"
+import { init } from "./constants"
 import { userInfo } from "os";
 import { fchmod } from "fs";
 import { format } from "url";
@@ -104,20 +106,13 @@ export async function giveInstall(request: Request) {
 
 /* generate a token form the code passed in the query string */
 export async function giveToken(request: Request) {
-  console.log("Got request", request);
-
-  // const token = jwt.sign({ user: userInfo }, clientSecret);
   let req_url = new URL(request.url);
-  let respBody = {
-  }
   let code = req_url.searchParams.get("code");
   let email = req_url.searchParams.get("email");
-  console.log(code);
 
   if (!code) {
     try {
       let reqBody = await request.text()
-      console.log("reqBody", reqBody);
 
       let params = new URLSearchParams(reqBody)
       code = params.get('code')
@@ -125,31 +120,35 @@ export async function giveToken(request: Request) {
       // code = reqBody.code || reqBody.metadata.code || reqBody.code[0] || reqBody.metadata.code[0]
     }
     catch (e) {
-      respBody = factoryHookResponse({ errors: [factoryIError({ message: "request sent didn't from the body " })] })
+      respBody.errors.push(factoryIError({ message: "request sent didn't from the body " }))
       return new Response(JSON.stringify(respBody), init);
     }
   }
 
   let token = "";
   let headers = new Headers(init.headers);
-  console.log("here");
-  console.log(code);
 
   if (code) {
-    token = jwt.sign(code, credentials.client.secret);
-    headers.append("set-cookie", "token=Bearer " + token);
     // @ts-ignore
-    await TOKENS.put()
-    respBody = {
-      "access_token": token,
+    let storedCode = await CODES.get(email)
+    if (storedCode && code != storedCode) return new Response(give403Page(), { status: 403 })
+    // @ts-ignore
+    await CODES.put(email, code)
+
+    let tokenJWT = jwt.sign(email, credentials.client.secret);
+    headers.append("set-cookie", "token=Bearer " + tokenJWT);
+    // @ts-ignore
+    await TOKENS.put(email, tokenJWT)
+    var respBody = factoryTokenResponse({
+      "access_token": tokenJWT,
       "token_type": "bearer",
       "expires_in": 2592000,
       "refresh_token": token,
       "token": token
       // "scope": "read", "uid": 100101, "info": { "name": "Mark E. Mark", "email": "mark@thefunkybunch.com" }
-    }
+    })
   } else {
-    respBody = { errors: "there was no code sent to the authorize token url " }
+    respBody.errors.push(factoryIError({ message: "there was no code sent to the authorize token url" }))
   }
   return new Response(JSON.stringify(respBody), { headers });
 }

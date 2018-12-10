@@ -1,20 +1,67 @@
 import { userInfo, credentials, paths, init } from "./constants"
-import {  } from "./generate_html"
-import { log } from "util";
+import { factoryHookResponse, factoryIError } from "./types";
 
 
+export function giveOriginWarnPage() {
+    return `<!DOCTYPE html>
+    <html>
+    <body>
+        Warning this link wants to go to origin
+    </body>
+    </html>
+    `;
+}
+export function give403Page() {
+    return `<!DOCTYPE html>
+    <html>
+    <body>
+        403 unauthorized returned
+    </body>
+    </html>
+    `;
+}
+export async function errorRouteNotFoundResponse(request: Request) {
+    console.log("route not found");
 
+    let respBody = factoryHookResponse({
+        errors: [factoryIError({ message: "route not found on the token worker url: " + request.url})]
+    })
+    return new Response(JSON.stringify(respBody), init)
+}
 export function giveOAuthAcceptPage(request: Request) {
     let req_url = new URL(request.url);
     let redirect_url = encodeURI(req_url.searchParams.get("redirect_uri")) || "window.location";
     return `<!DOCTYPE html>
     <html>
         <script>
+        function getCookie(cname) {
+            var name = cname + "=";
+            var ca = document.cookie.split(';');
+            for(var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
         function accept(){
             //Send the code to auth server to store
-            {code, email} = await storeCode()
+            const token = getCookie("token")
+            // trade the credentials for a code
+            let resp = await fetch("${paths.auth.storeCode}",{headers: {
+                    "Authorization": token
+            })
+            let respBody = await resp.json()
+            let code =respBody.code
+            console.log("code", code)
+            // redirect the browser to the URL specified by the callback link with this gathered code
             let loc = "${redirect_url}?code=" + code + "&email="+ email +"&client_id=${credentials.client.id}"; 
             window.location.href= loc
+            
         }
         </script>
         <body id="body_id>
@@ -22,19 +69,12 @@ export function giveOAuthAcceptPage(request: Request) {
         </body>
     </html>
         `;
-    }
-    export async function errorRouteNotFoundResponse(request: Request) {
-        console.log("route not found");
+}
 
-    let respBody = {
-        proceed: false,
-        errors: ["route not found on the token worker url: " + request.url],
-        install: {}
-    }
-    return new Response(JSON.stringify(respBody), init)
-    }
 
 export function giveLoginPage(request: Request) {
+    let req_url = new URL(request.url);
+    let redirect_url = encodeURI(req_url.searchParams.get("redirect_uri")) || "window.location";
     return `
     <!DOCTYPE html>
 <html>
@@ -49,11 +89,15 @@ export function giveLoginPage(request: Request) {
                 body: JSON.stringify(body), 
                 method:"POST"
             }
-            fetch("${paths.auth.storeCode}", init).then(res=>{
-                console.log('fetching in browser the code' )
-                console.log(res)
-            }).catch(e=> console.log('e', e)
-            )
+            // trade the credentials for a code
+            let resp = await fetch("${paths.auth.storeCode}", init)
+            let respBody = await resp.json()
+            let code =respBody.code
+            console.log("code", code)
+            // redirect the browser to the original URL with this gathered code
+            let loc = "${redirect_url}?code=" + code + "&email="+ email +"&client_id=${credentials.client.id}"; 
+            window.location.href= loc
+            
         }
         function getCookie(cname) {
             var name = cname + "=";
@@ -72,8 +116,8 @@ export function giveLoginPage(request: Request) {
         function login(){
             console.log("senidng away")
             let loc = "${paths.auth.callback}/?redirect_uri="+ window.location.href +"&email=${
-                userInfo.email
-                }&client_id=${credentials.client.id}"; 
+        userInfo.email
+        }&client_id=${credentials.client.id}"; 
             console.log(loc)
             window.location.href= loc
         }
@@ -126,7 +170,7 @@ export function giveLoginPage(request: Request) {
     <body>
         <button onClick=getResults()> Results </button>
         ${paths.auth.storeCode}
-        <form class="" action='${paths.auth.storeCode}' id="form_id" method="post">
+        <form class="" id="form_id" method="post">
             <div class="container">
                 <label for="un"><b>Username</b></label>
                 <input type="text" placeholder="Enter Username" name="un" required>

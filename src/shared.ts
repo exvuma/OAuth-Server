@@ -1,6 +1,6 @@
 import * as jwt from "jsonwebtoken";
-import { giveOriginWarnPage } from "./generate_html";
-import {credentials} from "./constants"
+import { giveOriginWarnPage } from "./html_pages";
+import { credentials } from "./constants"
 
 //protected user information
 

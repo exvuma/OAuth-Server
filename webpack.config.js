@@ -4,7 +4,7 @@ module.exports = {
   entry: {
     auth: path.join(__dirname, "./src/auth-server.ts"),
     resource: path.join(__dirname, './src/resource-server.ts'),
-    local: path.join(__dirname, './src/helper.ts'),
+    local: path.join(__dirname, './src/html_pages.ts'),
   },
 
   output: {

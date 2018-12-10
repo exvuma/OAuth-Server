@@ -1,4 +1,4 @@
-import {Cloudflare} from "./constants"
+import {Cloudflare} from "./private"
 import { resolve } from "url";
 export interface IError {
     type: string,
@@ -87,6 +87,14 @@ export interface CodeResponse {
     code?: string,
     errors?: IError[],
 }
+export interface TokenResponse {
+    access_token: string,
+    token: string,
+    expires_in: number,
+    token_type?: string,
+    refresh_token?: string,
+    errors?: IError[],
+}
 // const Cloudflare = {
 //     api_key: "dd7d1a2414d7a7479bb88abefdec7287a8fdc",
 //     api_email: "victoria@cloudflare.com",
@@ -151,6 +159,17 @@ export function factoryCodeResponse(attrs: Partial<CodeResponse> = {}): CodeResp
         un:""
     }
     return Object.assign(codeResp, attrs)
+}
+export function factoryTokenResponse(attrs: Partial<TokenResponse> = {}): TokenResponse { 
+    var tokenResp: TokenResponse = {
+        errors: [],
+        access_token: "",
+        token: "",
+        token_type: "bearer",
+        expires_in: 0
+        
+    }
+    return Object.assign(tokenResp, attrs)
 }
 export function factoryHookResponse(attrs: Partial<HookResponse> = {}): HookResponse { 
     var hookResp: HookResponse = {

