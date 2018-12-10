@@ -2,7 +2,6 @@ import * as jwt from "jsonwebtoken";
 import { giveOriginWarnPage } from "./html_pages";
 import { credentials } from "./constants"
 
-//protected user information
 
 export function checkToken(
   request: Request,
@@ -11,21 +10,15 @@ export function checkToken(
 ) /* Checks the auth header for the Bearer token then returns the decoded payload */{
   const url = new URL(request.url);
   let token = request.headers.get("Authorization").substring(7); // string out "bearer "
-  console.log("token", token);
   let result = {
     verified: false,
     error: "",
-    // payload: String | Object, 
   };
   try {
     const ver = jwt.verify(token, credentials.client.secret);
-    console.log(ver);
     result.verified = true;
-    // result.payload = ver
-    // const info = jwt.decode(token);
-    // console.log("info", info);
+
   } catch (e) {
-    console.log(e);
     result.error = e;
   }
   return result;

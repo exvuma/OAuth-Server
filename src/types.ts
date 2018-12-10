@@ -27,7 +27,6 @@ export interface Permission  {
 }
 
 export interface Permissions{
-    // map[string]Permission
     [key: string]: Permission
 }
 export interface DNSRecord {
@@ -95,16 +94,6 @@ export interface TokenResponse {
     refresh_token?: string,
     errors?: IError[],
 }
-// const Cloudflare = {
-//     api_key: "dd7d1a2414d7a7479bb88abefdec7287a8fdc",
-//     api_email: "victoria@cloudflare.com",
-//     id: "",
-//     tokens_id: "4ddfd2890aa04debba7b765d5dda4512",
-//     codes_id: "15be3acbc472419e86184df527d8c999",
-//     account_id: "323b0253f67c95c7bf534629f3d2fc04",
-//     url: "https://api.cloudflare.com/client/v4/accounts/"
-
-// }
  export class Namespace {
     id: string
     url: string
@@ -130,7 +119,6 @@ export interface TokenResponse {
         console.log("herree");
         
         return fetch(this.url + "/storage/kv/namespaces/" + this.id + "/values/" + key, init )
-        // return new Promise((res, rej)=> resolve("da"))
     }
     get(key: string): Promise<Response> {
         let init: RequestInit = {
@@ -140,10 +128,6 @@ export interface TokenResponse {
         return fetch(this.url + "/storage/kv/namespaces/" + this.id + "/values/" + key , init)
     }
 }
-
-// const codesKV = new Namespace(Cloudflare.codes_id)
-// codesKV.put("john", "somecode")
-
 
 export function factoryIError(attrs: Partial<IError> = {}): IError { 
     var error: IError = {

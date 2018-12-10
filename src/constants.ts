@@ -35,10 +35,9 @@ export const userInfo = {
         }
     }
 };
-
-
 export const init = {
     headers: {
+        //to avoid cors issue is using different hosts for token and auth servers
         'Access-Control-Allow-Origin': "*",
         'Access-Control-Allow-Headers': "*",
         'Access-Control-Allow-Credentials': 'true',

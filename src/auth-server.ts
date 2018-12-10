@@ -16,35 +16,9 @@ import {
 import { factoryHookResponse, factoryIError, factoryCodeResponse } from "./types";
 import {  give403Page } from "./html_pages";
 
-
-// var constants = require('./constants');
-// // var jwt  = require("jsonwebtoken");
-// userInfo = {
-//   email: "v"
-// };
-// secret = "123";
-//  code = jwt.sign(userInfo.email, secret)
-// jwt.decode(code, secret)
-
-
-// var CODES = this.CODES as any
-// for testing KV
-
-// addEventListener('fetch', event => {
-//   event.respondWith(handleRequest(event.request))
-// })
-// async function handleRequest(request) {
-//   let tokenResp = await TOKENS.get("un")
-//   return new Response(tokenResp)
-// }
-
-//https://www.npmjs.com/package/simple-oauth2
-// const oauth2 = oauth2_lib.create(credentials);
-/* for /oauth endpoints*/
+/* for authetication endpoints, the first part of the oauth flow */
 addEventListener("fetch", (event: FetchEvent) => {
   const url = new URL(event.request.url);
-  // url.password()
-  console.log(url.pathname);
 
   if (url.pathname.includes("/home"))
     return event.respondWith(giveLoginPageResponse(event.request));
@@ -57,20 +31,17 @@ addEventListener("fetch", (event: FetchEvent) => {
   return event.respondWith(errorRouteNotFoundResponse(event.request));
 });
 
-/* Client */
+/* Ask resource/token server for the token using the code */
 function requestToken(code: String) {
-  // return new Promise((res, rej) => {
-  //   res(checkCodeGiveToken(code))
-  // })
   return fetch(
     paths.token.token + "?code=" + code
   );
 }
 
-// checks if token or un/pwd combos were passed in
-// return {"403", "403"} if this doesn't match expected vallus
-// returns { blank, blank } if user didn't exist
-// return { email, token } if legit
+// verifyUser checks if token or un/pwd combos were passed in
+// return {msg: "403"} if this doesn't match expected vallus
+// returns {msg: "" } if user didn't exist
+// return { email, token , pwd, msg} if legit
 export async function verifyUser(request: Request): Promise<{email: string, pwd:string, token:string, msg:string}>{
   let res = factoryHookResponse({})
 
@@ -97,19 +68,14 @@ export async function verifyUser(request: Request): Promise<{email: string, pwd:
     let storedPWD = await USERS.get(un)
 
     if (!storedPWD) {
+      // case where user does not exist DNE
       return { email: un, token: "" , "pwd": pwd, msg: "dne"}
-      // return registerNewUser(request)
     }
     try {
       //verify this password is the same as the encrypted one stored
-      console.log(storedPWD);
-      
       let oldPwd = jwt.verify(storedPWD, credentials.storage.secret)
-      console.log("old");
       
       if (oldPwd != pwd) {
-        console.log("pass don't match");
-
         res.errors.push(factoryIError({ message: "old password does not match" }))
         return {email: un , pwd: pwd, msg:"403",token:"" }
       }
@@ -126,18 +92,6 @@ export async function verifyUser(request: Request): Promise<{email: string, pwd:
     return { email: "403", token: "403", msg: "403", pwd: "" }
   }
   return { email: "403", token: "403", msg: "403", pwd: "" }
-  // }
-  //     catch (e) {
-  //   res.proceed = false
-  //   res.errors.push(e)
-  // }
-
-  // } catch (e) {
-  //   res.proceed = false
-  //   res.errors.push(factoryIError({ message: "could not get the un and pwd from the JSON of the request" + e.message || " no error message" }))
-  //   res.errors.push(e)
-
-  // }
 }
 // check for the token only and store the code that will be returned
 export async function accept(request: Request) {
@@ -166,16 +120,12 @@ export async function signIn(request: Request) {
     res.errors.push(factoryIError({ message: "could not verify the user" }))
     return
   }
-
-  // res.proceed = true
   let headers = Object.assign(init.headers, {
     "content-type": "text/html",
-    // "access-control-allow-origin":" no-cors"
   });
   return new Response(giveOAuthAcceptPage(request), {
     headers
   });
-  // return new Response(JSON.stringify(res))
 
 }
 export async function registerNewUser(un: string, pwd: string) {
@@ -185,8 +135,7 @@ export async function registerNewUser(un: string, pwd: string) {
   //   "content-type": "text/html",
   // }));
   try {
-    //  var TOKENS: any
-    // let existingUser = "await TOKENS.get(un)"
+
     //@ts-ignore
     let existingUser = await USERS.get(un)
     if (existingUser) {
@@ -242,8 +191,6 @@ export async function giveLoginPageResponse(request: Request) {
       let response = await requestToken(code)
       try {
         let responseJSON = await response.json()
-        console.log("responseJSON", responseJSON);
-
         headers.append("set-cookie", "token=Bearer " + responseJSON.id_token);
 
       }

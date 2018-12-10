@@ -1,26 +1,14 @@
 import * as jwt from "jsonwebtoken";
-import * as oauth2_lib from "simple-oauth2";
 import { getCookie, } from "./shared";
 import { factoryTokenResponse } from "./types"
 import { errorRouteNotFoundResponse, give403Page } from "./html_pages"
-import { IError, HookResponse, factoryInstall, factoryHookResponse, factoryIError, factoryCodeResponse } from "./types"
-import { credentials } from "./constants"
-import { init } from "./constants"
-import { userInfo } from "os";
-import { fchmod } from "fs";
-import { format } from "url";
-// import * from "./helper";
-// var jwt:any  = require("jsonwebtoken");
-
-//https://www.npmjs.com/package/simple-oauth2
-// const oauth2 = oauth2_lib.create(credentials);
+import {  HookResponse, factoryHookResponse, factoryIError, factoryCodeResponse } from "./types"
+import { credentials, init } from "./constants"
 
 
-/* for /token endpoints*/
+/* for token and resource endpoints*/
 addEventListener("fetch", (event: FetchEvent) => {
   const url = new URL(event.request.url);
-  // url.password()
-  console.log(url.pathname);
 
   if (url.pathname.includes("/authorize"))
     return event.respondWith(giveToken(event.request));
@@ -49,29 +37,13 @@ export async function giveResource(request: Request) {
 
     return new Response(JSON.stringify(info), init)
   }
-  // try {
-  //   info = {
-  //     token: jwt.decode(token)
-  //   }
-  //   info = Object.assign(info, userInfo)
-  //   console.log("info" , info);
-
-
-  // } catch (e) {
-  //   info = {
-  //     errors: ["error decoding  ", e]
-  //   }
-  // }
   return new Response(JSON.stringify(info), init)
 
 }
 /* use the bearer token to get the install */
 export async function giveInstall(request: Request) {
-  console.log("giving reources");
 
-  let install = {}
   let token = ""
-  // get Bearer token
   let respBody: HookResponse = factoryHookResponse({})
   try {
     let reqJSON = await request.json()
@@ -97,9 +69,6 @@ export async function giveInstall(request: Request) {
       message: "Error getting the token from the request body"
     }
     ));
-    console.log(e);
-
-    // respBody.errors.push(e)
   }
   return new Response(JSON.stringify(respBody), init)
 }
