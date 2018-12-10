@@ -1,3 +1,4 @@
+./src/private*
 dist/*
 node_modules/*
 *.lock
