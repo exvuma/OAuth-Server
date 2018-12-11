@@ -1,5 +1,6 @@
-import {Cloudflare} from "./private"
+import { Cloudflare } from "./private"
 import { resolve } from "url";
+import { paths, userInfo } from "./constants";
 export interface IError {
     type: string,
     message: string,
@@ -12,39 +13,39 @@ export interface Message {
     dismissButtonText: string,
 }
 export interface Worker {
-    priority:  number,
-    src:       string,
+    priority: number,
+    src: string,
 }
 export interface Link {
-    title :        string, 
-    description :  string, 
-    href :         string, 
+    title: string,
+    description: string,
+    href: string,
 }
-export interface Permission  {
-    grantedByUserID :  string,
-    created :          string,
-    scope : string[],
+export interface Permission {
+    grantedByUserID: string,
+    created: string,
+    scope: string[],
 }
 
-export interface Permissions{
+export interface Permissions {
     [key: string]: Permission
 }
 export interface DNSRecord {
-    iD:          string
-    type:        string
-    name:        string
-    content:     string
-    proxiable:   boolean
-    proxied:     boolean
-    tTL:         number
-    locked:      boolean
-    zoneID:      string
-    zoneName:    string
-    createdOn:   Date
-    modifiedOn:  Date
-    data:        any
-    meta:        any
-    priority:    number
+    iD: string
+    type: string
+    name: string
+    content: string
+    proxiable: boolean
+    proxied: boolean
+    tTL: number
+    locked: boolean
+    zoneID: string
+    zoneName: string
+    createdOn: Date
+    modifiedOn: Date
+    data: any
+    meta: any
+    priority: number
 }
 export interface Install {
     id: string,
@@ -94,20 +95,31 @@ export interface TokenResponse {
     refresh_token?: string,
     errors?: IError[],
 }
- export class Namespace {
+export interface JWTPayload {
+    version?: string,
+    iss?: string,
+    sub: string,
+    type: string,
+    aud?: string,
+    kid?: string,
+    exp: number,
+    iat: number
+}
+export class Namespace {
     id: string
     url: string
     headers: { [key: string]: string }
-    
+
     constructor(id: string) {
         this.id = id
         this.url = Cloudflare.url + Cloudflare.account_id
-        this.headers = { "X-Auth-Email" : Cloudflare.api_email, 
-         "X-Auth-Key" : Cloudflare.api_key, 
-         "Content-Type" : "application/json", 
+        this.headers = {
+            "X-Auth-Email": Cloudflare.api_email,
+            "X-Auth-Key": Cloudflare.api_key,
+            "Content-Type": "application/json",
         }
     }
-    
+
     put(key: string, val: string): Promise<Response> {
         let init: RequestInit = {
             method: "PUT",
@@ -117,19 +129,19 @@ export interface TokenResponse {
             headers: new Headers(this.headers)
         }
         console.log("herree");
-        
-        return fetch(this.url + "/storage/kv/namespaces/" + this.id + "/values/" + key, init )
+
+        return fetch(this.url + "/storage/kv/namespaces/" + this.id + "/values/" + key, init)
     }
     get(key: string): Promise<Response> {
         let init: RequestInit = {
             method: "GET",
             headers: new Headers(this.headers)
         }
-        return fetch(this.url + "/storage/kv/namespaces/" + this.id + "/values/" + key , init)
+        return fetch(this.url + "/storage/kv/namespaces/" + this.id + "/values/" + key, init)
     }
 }
 
-export function factoryIError(attrs: Partial<IError> = {}): IError { 
+export function factoryIError(attrs: Partial<IError> = {}): IError {
     var error: IError = {
         type: '',
         fields: [],
@@ -137,25 +149,35 @@ export function factoryIError(attrs: Partial<IError> = {}): IError {
     }
     return Object.assign(error, attrs)
 }
-export function factoryCodeResponse(attrs: Partial<CodeResponse> = {}): CodeResponse { 
+export function factoryCodeResponse(attrs: Partial<CodeResponse> = {}): CodeResponse {
     var codeResp: CodeResponse = {
         errors: [],
-        un:""
+        un: ""
     }
     return Object.assign(codeResp, attrs)
 }
-export function factoryTokenResponse(attrs: Partial<TokenResponse> = {}): TokenResponse { 
+export function factoryTokenResponse(attrs: Partial<TokenResponse> = {}): TokenResponse {
     var tokenResp: TokenResponse = {
         errors: [],
         access_token: "",
         token: "",
         token_type: "bearer",
-        expires_in: 0
-        
+        expires_in: Math.round((Date.now() / 1000) + (5 * 24 * 60 * 60)), /* expire in 5 days */
+
     }
     return Object.assign(tokenResp, attrs)
 }
-export function factoryHookResponse(attrs: Partial<HookResponse> = {}): HookResponse { 
+export function factoryJWTPayload(attrs: Partial<JWTPayload> = {}): JWTPayload {
+    var JWTResp: JWTPayload = {
+        iss: paths.token.token,
+        sub: userInfo.email,
+        type: "un/pwd",
+        exp: Math.round((Date.now() / 1000) + ( 5 * 24 * 60 * 60)), /* expire in 5 days */
+        iat: Math.round( Date.now() / 1000)
+    }
+    return Object.assign(JWTResp, attrs)
+}
+export function factoryHookResponse(attrs: Partial<HookResponse> = {}): HookResponse {
     var hookResp: HookResponse = {
         proceed: true,
         errors: [],
@@ -163,7 +185,7 @@ export function factoryHookResponse(attrs: Partial<HookResponse> = {}): HookResp
     }
     return Object.assign(hookResp, attrs)
 }
-export function factoryInstall(attrs: Partial<Install> = {} ): Install{
+export function factoryInstall(attrs: Partial<Install> = {}): Install {
     var install: Install = {
         id: "",
         appId: "",

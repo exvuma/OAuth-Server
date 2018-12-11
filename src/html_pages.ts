@@ -28,9 +28,9 @@ export async function errorRouteNotFoundResponse(request: Request) {
     })
     return new Response(JSON.stringify(respBody), init)
 }
-export function giveOAuthAcceptPage(request: Request) {
+export function giveAcceptPage(request: Request) {
     let req_url = new URL(request.url);
-    let redirect_url = encodeURI(req_url.searchParams.get("redirect_uri")) || "window.location";
+    let redirect_url = encodeURI(req_url.searchParams.get("redirect_uri")) 
     return `<!DOCTYPE html>
     <html>
         <script>
@@ -48,57 +48,46 @@ export function giveOAuthAcceptPage(request: Request) {
             }
             return "";
         }
-        function accept(){
+        async function accept(){
             //Send the code to auth server to store
             const token = getCookie("token")
             // trade the credentials for a code
-            let resp = await fetch("${paths.auth.storeCode}",{headers: {
-                    "Authorization": token
+            let resp = await fetch("${paths.auth.storeCode}",{headers: 
+                    {"Authorization": token}
             })
-            let respBody = await resp.json()
-            let code =respBody.code
-            console.log("code", code)
-            // redirect the browser to the URL specified by the callback link with this gathered code
-            let loc = "${redirect_url}?code=" + code + "&email="+ email +"&client_id=${credentials.client.id}"; 
-            window.location.href= loc
+            try{
+                let respBody = await resp.json()
+                let code =respBody.code
+                console.log("code", code)
+                // redirect the browser to the URL specified by the callback link with this gathered code
+                let redirect_url = "${redirect_url}" != "null" ?  "${redirect_url}":  window.location.href;
+                let loc = redirect_url+ "?code=" + code + "&email="+ email +"&client_id=${credentials.client.id}"; 
+                if(typeof(loc) != "string") throw new Error("loction not a string" )
+                window.location.href= loc
+
+            }catch(e){
+                var node = document.createElement("li");                 
+                var textnode = document.createTextNode(JSON.stringify(e.message));         
+                node.appendChild(textnode);                             
+                document.getElementById("body_id").appendChild(node);
+                return
+            }
             
         }
         </script>
-        <body id="body_id>
-            <button onClick=accept()> Accept</button>
+        <body id="body_id">
+            <button onClick="accept()"> Accept</button>
         </body>
     </html>
         `;
 }
 
 
-export function giveLoginPage(request: Request) {
-    let req_url = new URL(request.url);
-    let redirect_url = encodeURI(req_url.searchParams.get("redirect_uri")) || "window.location";
+export function giveGetResultsPage(request: Request) {
     return `
     <!DOCTYPE html>
-<html>
-    <script>
-        function submitLogin(event){
-             let form = document.getElementById("form_id")
-            let body = {
-                un: form.elements["un"].value,
-                pwd: form.elements["pwd"].value
-            }
-            let init = {
-                body: JSON.stringify(body), 
-                method:"POST"
-            }
-            // trade the credentials for a code
-            let resp = await fetch("${paths.auth.storeCode}", init)
-            let respBody = await resp.json()
-            let code =respBody.code
-            console.log("code", code)
-            // redirect the browser to the original URL with this gathered code
-            let loc = "${redirect_url}?code=" + code + "&email="+ email +"&client_id=${credentials.client.id}"; 
-            window.location.href= loc
-            
-        }
+    <html>
+        <script>
         function getCookie(cname) {
             var name = cname + "=";
             var ca = document.cookie.split(';');
@@ -112,14 +101,6 @@ export function giveLoginPage(request: Request) {
                 }
             }
             return "";
-        }
-        function login(){
-            console.log("senidng away")
-            let loc = "${paths.auth.callback}/?redirect_uri="+ window.location.href +"&email=${
-        userInfo.email
-        }&client_id=${credentials.client.id}"; 
-            console.log(loc)
-            window.location.href= loc
         }
         function getResults(){
             const token = getCookie("token")
@@ -141,8 +122,6 @@ export function giveLoginPage(request: Request) {
                 return
             }
             fetch( "${ paths.token.resource}", init).then( res =>{
-                console.log(init)
-                console.log(res)
                 if(res.ok)
                 return res.json()
                 else throw(res.text())
@@ -150,7 +129,6 @@ export function giveLoginPage(request: Request) {
             .catch(err =>{ throw(err)})
             .then(body =>
                 {
-                    console.log(body)
                     var node = document.createElement("LI");                 
                     var textnode = document.createTextNode(JSON.stringify(body));         
                     node.appendChild(textnode);                             
@@ -164,24 +142,74 @@ export function giveLoginPage(request: Request) {
                     document.getElementById("body_id").appendChild(node);  
             })
         }
-            
         </script>
+        <body id="body_id">
+            <button onClick="getResults()"> Results < /button>
+        </body>
+    </html>`
 
-    <body>
-        <button onClick=getResults()> Results </button>
-        ${paths.auth.storeCode}
-        <form class="" id="form_id" method="post">
+}
+export function giveLoginPage(request: Request) {
+    let req_url = new URL(request.url);
+    let redirect_url = encodeURI(req_url.searchParams.get("redirect_uri"));
+    return `
+    <!DOCTYPE html>
+    <html>
+        <script>
+            async function submitLogin(event){
+                let form = document.getElementById("form_id")
+                let email =  form.elements["un"].value
+                let body = {
+                    un: email,
+                    pwd: form.elements["pwd"].value
+                }
+                let init = {
+                    body: JSON.stringify(body), 
+                    method:"POST"
+                }
+                // trade the credentials for a code
+                let resp = await fetch("${paths.auth.storeCode}", init)
+                let respBody = await resp.json()
+                let code =respBody.code
+                console.log("code", code)
+                // redirect the browser to the original URL with this gathered code
+                let redirect_url = "${redirect_url}" != "null" ?  "${redirect_url}":  window.location.href;
+                let loc = redirect_url+"?code=" + code + "&email="+ email +"&client_id=${credentials.client.id}"; 
+                 if(typeof(loc) != "string") throw new Error("loction not a string" )
+                window.location.href= loc
+                
+            }
+            function login(){
+                console.log("senidng away")
+                let loc = "${paths.auth.callback}/?redirect_uri="+ window.location.href +"&email=${
+            userInfo.email
+            }&client_id=${credentials.client.id}"; 
+                console.log(loc)
+                 if(typeof(loc) != "string") throw new Error("loction not a string" )
+                window.location.href= loc
+            }
+
+                
+            </script>
+
+        <body>
+
+        <form class="" id="form_id">
             <div class="container">
                 <label for="un"><b>Username</b></label>
                 <input type="text" placeholder="Enter Username" name="un" required>
 
                 <label for="pwd"><b>Password</b></label>
                 <input type="password" placeholder="Enter Password" name="pwd" required>
-
-                <button type="submit" onclick="submitLogin()">Login</button>
+                <button type="submit" value="Submit">Login</button>
             </div>
         </form>
-
+        <script>
+            form_id.addEventListener('submit', e=>{
+                e.preventDefault()
+                submitLogin()
+            })
+        </script>
     </body>
 
 </html>
