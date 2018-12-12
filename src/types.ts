@@ -105,6 +105,13 @@ export interface JWTPayload {
     exp: number,
     iat: number
 }
+export interface Session {
+    email: string,
+    token: string,
+    msg: string,
+    pwd: string
+}
+
 export class Namespace {
     id: string
     url: string
@@ -148,6 +155,15 @@ export function factoryIError(attrs: Partial<IError> = {}): IError {
         message: ''
     }
     return Object.assign(error, attrs)
+}
+export function factorySession(attrs: Partial<Session> = {}): Session {
+    var sess: Session = {
+        email: '',
+        token: '',
+        msg: '',
+        pwd:''
+    }
+    return Object.assign(sess, attrs)
 }
 export function factoryCodeResponse(attrs: Partial<CodeResponse> = {}): CodeResponse {
     var codeResp: CodeResponse = {

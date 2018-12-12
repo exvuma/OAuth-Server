@@ -14,7 +14,7 @@ import {
   init,
   credentials
 } from "./constants"
-import { factoryHookResponse, factoryIError, factoryCodeResponse, factoryJWTPayload } from "./types";
+import { factoryHookResponse, Session, factoryIError, factoryCodeResponse, factoryJWTPayload, factorySession } from "./types";
 import { give403Page } from "./html_pages";
 
 /* for authetication endpoints, the first part of the oauth flow */
@@ -28,7 +28,7 @@ addEventListener("fetch", (event: FetchEvent) => {
   if (url.pathname.includes("/authorize"))
     return event.respondWith(giveLoginPageResponse(event.request));
   if (url.pathname.includes("/code"))
-    return event.respondWith(giveAcceptPageResponse(event.request));
+    return event.respondWith(redirectCodeToConsumer(event.request));
   return event.respondWith(errorRouteNotFoundResponse(event.request));
 });
 
@@ -43,22 +43,23 @@ function requestToken(code: String) {
 // return {msg: "403"} if this doesn't match expected vallus
 // returns {msg: "" } if user didn't exist
 // return { email, token , pwd, msg} if legit
-export async function verifyUser(request: Request): Promise<{ email: string, pwd: string, token: string, msg: string }> {
-  let res = factoryHookResponse({})
-
+export async function verifyUser(request: Request): Promise<Session> {
+  let res = factoryHookResponse()
+  let sess = factorySession()
   // first see if there was a token passed in meaning the user is signed in
   try {
     let token = getCookie(request.headers.get("cookie"), "token")
     if (!token) token = request.headers.get("Authorization").substring(7)
     if (!token) throw new Error("no token")
     let userInfo = jwt.decode(token)
-    let email = userInfo.sub
-    console.log("email:", email);
+    sess.email = userInfo.sub
+    sess.token = token
+    console.log("sess.email:", sess.email);
 
     // @ts-ignore
-    let storedToken = await TOKENS.get(email)
+    let storedToken = await TOKENS.get(sess.email)
     // if (token != storedToken) return { email: "403", token: "403" }
-    return { email: "email", token: token, pwd: "", msg: "" }
+    return sess
   }
   catch (e) {
     console.log("error with auth token", e);
@@ -98,38 +99,30 @@ export async function verifyUser(request: Request): Promise<{ email: string, pwd
   return { email: "403", token: "403", msg: "403", pwd: "" }
 }
 // check for the token only and store the code that will be returned
-export async function giveAcceptPageResponse(request: Request) {
+export async function redirectCodeToConsumer(request: Request) {
   let { email, token, msg, pwd } = await verifyUser(request)
 
   if (msg == "403") return new Response(give403Page(), { status: 403 })
   if (msg == "dne") return registerNewUser(email, pwd)
   let code = Math.random().toString(36).substring(2, 12)
-  // @ts-ignore
-  await CODES.put(email, code)
-  let body = { email, code, token }
-  return new Response(JSON.stringify(body))
-}
-//check for a token or a un and pwd, generate a random code if
-//valid and store it if so
-export async function signIn(request: Request) {
-  let res = factoryHookResponse({})
-  let { email, token } = await verifyUser(request)
-  if (email == "403") {
-    res.proceed = false
-    res.errors.push(factoryIError({ message: "could not verify the user" }))
-    return
+  try {
+    let req_url = new URL(request.url)
+    let redirect_uri = new URL(encodeURI(req_url.searchParams.get("redirect_uri")))
+    // @ts-ignore
+    await CODES.put(email, code)
+    redirect_uri.searchParams.set("scope", "user.read");
+    redirect_uri.searchParams.set("state", "someState");
+    redirect_uri.searchParams.set("code", code);
+    redirect_uri.searchParams.set("response_type", "code");
+    console.log(redirect_uri)
+    return Response.redirect(redirect_uri.href, 302);
+  } catch (e) {
+    // @ts-ignore
+    await CODES.delete(email, code)
+    return new Response(
+      JSON.stringify(factoryIError({ message: "error wth the URL passed in" + e})),
+     { status: 500 });
   }
-  if (email == "") {
-    res.proceed = false
-    res.errors.push(factoryIError({ message: "could not verify the user" }))
-    return
-  }
-  let headers = Object.assign(init.headers, {
-    "content-type": "text/html",
-  });
-  return new Response(giveAcceptPage(request), {
-    headers
-  });
 
 }
 export async function registerNewUser(email: string, pwd: string) {

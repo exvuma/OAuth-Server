@@ -30,53 +30,14 @@ export async function errorRouteNotFoundResponse(request: Request) {
 }
 export function giveAcceptPage(request: Request) {
     let req_url = new URL(request.url);
-    let redirect_url = encodeURI(req_url.searchParams.get("redirect_uri")) 
+    let params = req_url.search
+    let fetchCodeURL = paths.auth.storeCode + params
     return `<!DOCTYPE html>
     <html>
         <script>
-        function getCookie(cname) {
-            var name = cname + "=";
-            var ca = document.cookie.split(';');
-            for(var i = 0; i < ca.length; i++) {
-                var c = ca[i];
-                while (c.charAt(0) == ' ') {
-                    c = c.substring(1);
-                }
-                if (c.indexOf(name) == 0) {
-                    return c.substring(name.length, c.length);
-                }
-            }
-            return "";
-        }
-        async function accept(){
-            //Send the code to auth server to store
-            const token = getCookie("token")
-            // trade the credentials for a code
-            let resp = await fetch("${paths.auth.storeCode}",{headers: 
-                    {"Authorization": token}
-            })
-            try{
-                let respBody = await resp.json()
-                let code =respBody.code
-                console.log("code", code)
-                // redirect the browser to the URL specified by the callback link with this gathered code
-                let redirect_url = "${redirect_url}" != "null" ?  "${redirect_url}":  window.location.href;
-                let loc = redirect_url+ "?code=" + code + "&email="+ email +"&client_id=${credentials.client.id}"; 
-                if(typeof(loc) != "string") throw new Error("loction not a string" )
-                window.location.href= loc
-
-            }catch(e){
-                var node = document.createElement("li");                 
-                var textnode = document.createTextNode(JSON.stringify(e.message));         
-                node.appendChild(textnode);                             
-                document.getElementById("body_id").appendChild(node);
-                return
-            }
-            
-        }
         </script>
         <body id="body_id">
-            <button onClick="accept()"> Accept</button>
+            <a href="${fetchCodeURL}"> Accept</button>
         </body>
     </html>
         `;
